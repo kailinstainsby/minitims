@@ -49,3 +49,10 @@ class RollingVariance(RollingWindow):
             mean_sq = self.running_sum_sq / self.window_size
             return mean_sq - (mean ** 2)
         return None
+    
+class RollingStdDev(RollingVariance):
+    def get_stddev(self) -> float | None:
+        variance = self.get_variance()
+        if variance is not None:
+            return variance ** 0.5
+        return None
