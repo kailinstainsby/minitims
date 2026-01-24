@@ -1,0 +1,5 @@
+Metadata-Version: 2.4
+Name: minitims
+Version: 0.1.0
+Summary: Incremental rolling-window statistics for time-series
+Requires-Python: >=3.8

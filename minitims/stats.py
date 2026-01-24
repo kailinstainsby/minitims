@@ -1,4 +1,4 @@
-from rolling import RollingWindow
+from .rolling import RollingWindow
 
 class RollingMean(RollingWindow):
     def __init__(self, window_size: int, initial_values=None) -> None:

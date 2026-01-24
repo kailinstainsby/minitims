@@ -1,0 +1,10 @@
+pyproject.toml
+minitims/__init__.py
+minitims/exceptions.py
+minitims/rolling.py
+minitims/stats.py
+minitims.egg-info/PKG-INFO
+minitims.egg-info/SOURCES.txt
+minitims.egg-info/dependency_links.txt
+minitims.egg-info/top_level.txt
+tests/test_stats.py

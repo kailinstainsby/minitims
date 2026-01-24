@@ -1,0 +1,9 @@
+[build-system]
+requires = ["setuptools>=45", "wheel"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "minitims"
+version = "0.1.0"
+description = "Incremental rolling-window statistics for time-series"
+requires-python = ">=3.8"
