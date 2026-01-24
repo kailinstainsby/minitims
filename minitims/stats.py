@@ -1,6 +1,6 @@
 from .rolling import RollingWindow
 
-class RollingMean(RollingWindow):
+class RollingMean(RollingWindow): # O(1) rolling mean calculation
     def __init__(self, window_size: int, initial_values=None) -> None:
         # Call parent class to set up buffer
         super().__init__(window_size, initial_values)
@@ -24,4 +24,28 @@ class RollingMean(RollingWindow):
     def get_mean(self) -> float | None:
         if self.is_full():
             return self.running_sum / self.window_size
+        return None
+    
+class RollingVariance(RollingWindow): 
+    def __init__(self, window_size: int, initial_values=None) -> None:
+        # Call parent class to set up buffer
+        super().__init__(window_size, initial_values)
+
+        self.running_sum = sum(self.buffer)
+        self.running_sum_sq = sum(x**2 for x in self.buffer)
+
+    def update(self, new_value) -> None:
+        if self.is_full():
+            self.running_sum -= self.buffer[0]
+            self.running_sum_sq -= self.buffer[0] ** 2
+        
+        self.running_sum += new_value
+        self.running_sum_sq += new_value ** 2
+        super().update(new_value)
+
+    def get_variance(self) -> float | None:
+        if self.is_full():
+            mean = self.running_sum / self.window_size
+            mean_sq = self.running_sum_sq / self.window_size
+            return mean_sq - (mean ** 2)
         return None
