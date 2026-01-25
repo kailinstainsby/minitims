@@ -26,7 +26,7 @@ class RollingMean(RollingWindow): # O(1) rolling mean calculation
             return self.running_sum / self.window_size
         return None
     
-class RollingVariance(RollingWindow): 
+class RollingVariance(RollingWindow): # O(1) rolling variance calculation
     def __init__(self, window_size: int, initial_values=None) -> None:
         # Call parent class to set up buffer
         super().__init__(window_size, initial_values)
@@ -50,9 +50,33 @@ class RollingVariance(RollingWindow):
             return mean_sq - (mean ** 2)
         return None
     
-class RollingStdDev(RollingVariance):
+class RollingStdDev(RollingVariance): # O(1) rolling stddev calculation
     def get_stddev(self) -> float | None:
         variance = self.get_variance()
         if variance is not None:
             return variance ** 0.5
+        return None
+
+class RollingMin(RollingWindow): # O(n) rolling min calculation
+    def __init__(self, window_size: int, initial_values=None) -> None:
+        super().__init__(window_size, initial_values)
+
+    def update(self, new_value) -> None:
+        super().update(new_value)
+
+    def get_min(self) -> float | None:
+        if self.is_full():
+            return min(self.buffer)
+        return None
+    
+class RollingMax(RollingWindow): # O(n) rolling max calculation
+    def __init__(self, window_size: int, initial_values=None) -> None:
+        super().__init__(window_size, initial_values)
+
+    def update(self, new_value) -> None:
+        super().update(new_value)
+
+    def get_max(self) -> float | None:
+        if self.is_full():
+            return max(self.buffer)
         return None
