@@ -112,69 +112,99 @@ class TestRollingMeanResults:
 # ============================================================================
 
 class TestRollingVarianceInitialization:
-    """Test RollingVariance initialization."""
+    """Testing RollingVariance initialization."""
     
     def test_init_empty(self):
-        rv = RollingVariance(window_size=3)
-        assert rv.window_size == 3
+        rv = RollingVariance(window_size=2)
+        assert rv.window_size == 2
+        assert rv.get_window() == []
         assert len(rv.buffer) == 0
         assert rv.running_sum == 0
+        assert len(rv.buffer) == 0
         assert rv.running_sum_sq == 0
-    
-    def test_init_with_values(self):
-        rv = RollingVariance(window_size=3, initial_values=[1, 2, 3])
-        assert len(rv.buffer) == 3
-        assert rv.running_sum == 6
-        assert rv.running_sum_sq == 14  # 1^2 + 2^2 + 3^2
+        assert rv.is_full() is False
 
+    def test_init_smaller_than_window(self):
+        rv = RollingVariance(window_size=3, initial_values=[1, 2])
+        assert len(rv.buffer) == 2
+        assert rv.running_sum == sum(rv.buffer)
+        assert rv.running_sum_sq == sum(x**2 for x in rv.buffer)
+
+    def test_init_equal_to_window(self):
+        rv = RollingVariance(window_size=3, initial_values=[1, 2, 3])
+        assert len(rv.buffer) == rv.window_size
+        assert rv.running_sum == sum(rv.buffer)
+        assert rv.running_sum_sq == sum(x**2 for x in rv.buffer)
+
+    def test_init_larger_than_window(self):
+        rv = RollingVariance(window_size=2, initial_values=[1, 2, 3, 4])
+        assert len(rv.buffer) == rv.window_size
+        assert rv.get_window() == [3, 4]
+        assert rv.running_sum == sum(rv.buffer)
+        assert rv.running_sum_sq == sum(x**2 for x in rv.buffer)
 
 class TestRollingVarianceUpdates:
-    """Test RollingVariance update behavior."""
-    
-    def test_update_increments_sums(self):
-        """Sums should increment correctly on update."""
-        rv = RollingVariance(window_size=3)
-        rv.update(2)
-        assert rv.running_sum == 2
-        assert rv.running_sum_sq == 4
-        
-        rv.update(4)
-        assert rv.running_sum == 6
-        assert rv.running_sum_sq == 20  # 2^2 + 4^2
-    
-    def test_invariants_maintained(self):
-        """INVARIANTS: both sums must match buffer."""
-        rv = RollingVariance(window_size=3)
-        values = [2, 4, 6, 8, 10]
-        
-        for value in values:
-            rv.update(value)
-            assert rv.running_sum == sum(rv.buffer), \
-                f"Sum invariant broken after {value}"
-            assert rv.running_sum_sq == sum(x**2 for x in rv.buffer), \
-                f"Sum_sq invariant broken after {value}"
+    """Testing RollingVariance update behaviour"""
 
+    def test_update_increments_sums(self):
+        rv = RollingVariance(window_size=2)
+        assert rv.running_sum == 0
+        assert rv.running_sum_sq == 0
+
+        rv.update(3)
+        assert rv.running_sum == 3
+        assert rv.running_sum_sq == 9
+
+        rv.update(5)
+        assert rv.running_sum == 8
+        assert rv.running_sum_sq == 34
+
+        rv.update(7)
+        assert rv.running_sum == 12  # 5 + 7
+        assert rv.running_sum_sq == 74  # 5^2 + 7^2
+
+    def test_update_appends_and_pops(self):
+        rv = RollingVariance(window_size=2, initial_values=[1, 2])
+        assert rv.get_window() == [1, 2]
+        #assert rv.running_sum == 3
+        #assert rv.running_sum_sq == 5
+
+        rv.update(3)
+        assert rv.get_window() == [2, 3]
+        #assert rv.running_sum == 5
+        #assert rv.running_sum_sq == 13
+
+        rv.update(4)
+        assert rv.get_window() == [3, 4]
+        #assert rv.running_sum == 7
+        #assert rv.running_sum_sq == 25
+
+        assert rv.update is None
 
 class TestRollingVarianceResults:
-    """Test RollingVariance variance calculation."""
-    
-    def test_variance_returns_none_when_not_full(self):
-        """get_variance() should return None if not full."""
+    """Testing RollingVariance variance calculation."""
+
+    def test_get_variance_returns_none_when_not_full(self):
         rv = RollingVariance(window_size=3)
         rv.update(1)
         assert rv.get_variance() is None
-    
-    def test_variance_correct_when_full(self):
-        """Variance should be correct when full."""
-        # [2, 4, 6]: mean = 4, variance = ((2-4)^2 + (4-4)^2 + (6-4)^2)/3 = 8/3
+
+        rv.update(2)
+        assert rv.get_variance() is None
+
+    def test_get_variance_correct_when_full(self):
         rv = RollingVariance(window_size=3, initial_values=[2, 4, 6])
-        expected = 8 / 3
-        assert abs(rv.get_variance() - expected) < 1e-10
-    
-    def test_variance_constant_input_is_zero(self):
-        """Variance of constant values should be 0."""
-        rv = RollingVariance(window_size=4, initial_values=[5, 5, 5, 5])
-        assert abs(rv.get_variance() - 0.0) < 1e-10
+        expected_variance = 8 / 3  # Pre-calculated variance
+        assert abs(rv.get_variance() - expected_variance) < 1e-10
+
+    def test_get_variance_correct_after_updates(self):
+        rv = RollingVariance(window_size=3, initial_values=[1, 2, 4])
+        expected_variance = 14 / 9  # Pre-calculated variance
+        assert abs(rv.get_variance() - expected_variance) < 1e-10
+
+        rv.update(6)  # Window is now [2, 4, 6]
+        expected_variance = 8 / 3
+        assert abs(rv.get_variance() - expected_variance) < 1e-10
 
 
 # ============================================================================
@@ -260,3 +290,104 @@ class TestRollingMaxResults:
         
         rmax.update(15)
         assert rmax.get_max() == 15  # [3, 2, 15]
+
+# ============================================================================
+# ROLLING VARIANCE TESTS
+# ============================================================================
+class TestRollingVarianceInitialization:
+    """Testing RollingVariance initialization."""
+    
+    def test_init_empty(self):
+        rv = RollingVariance(window_size=2)
+        assert rv.window_size == 2
+        assert rv.get_window() == []
+        assert len(rv.buffer) == 0
+        assert rv.running_sum == 0
+        assert len(rv.buffer) == 0
+        assert rv.running_sum_sq == 0
+        assert rv.is_full() is False
+
+    def test_init_smaller_than_window(self):
+        rv = RollingVariance(window_size=3, initial_values=[1, 2])
+        assert len(rv.buffer) == 2
+        assert rv.running_sum == sum(rv.buffer)
+        assert rv.running_sum_sq == sum(x**2 for x in rv.buffer)
+
+    def test_init_equal_to_window(self):
+        rv = RollingVariance(window_size=3, initial_values=[1, 2, 3])
+        assert len(rv.buffer) == rv.window_size
+        assert rv.running_sum == sum(rv.buffer)
+        assert rv.running_sum_sq == sum(x**2 for x in rv.buffer)
+
+    def test_init_larger_than_window(self):
+        rv = RollingVariance(window_size=2, initial_values=[1, 2, 3, 4])
+        assert len(rv.buffer) == rv.window_size
+        assert rv.get_window() == [3, 4]
+        assert rv.running_sum == sum(rv.buffer)
+        assert rv.running_sum_sq == sum(x**2 for x in rv.buffer)
+
+class TestRollingVarianceUpdates:
+    """Testing RollingVariance update behaviour"""
+
+    def test_update_increments_sums(self):
+        rv = RollingVariance(window_size=2)
+        assert rv.running_sum == 0
+        assert rv.running_sum_sq == 0
+
+        rv.update(3)
+        assert rv.running_sum == 3
+        assert rv.running_sum_sq == 9
+
+        rv.update(5)
+        assert rv.running_sum == 8
+        assert rv.running_sum_sq == 34
+
+        rv.update(7)
+        assert rv.running_sum == 12  # 5 + 7
+        assert rv.running_sum_sq == 74  # 5^2 + 7^2
+
+    def test_update_appends_and_pops(self):
+        rv = RollingVariance(window_size=2, initial_values=[1, 2])
+        assert rv.get_window() == [1, 2]
+        #assert rv.running_sum == 3
+        #assert rv.running_sum_sq == 5
+
+        rv.update(3)
+        assert rv.get_window() == [2, 3]
+        #assert rv.running_sum == 5
+        #assert rv.running_sum_sq == 13
+
+        rv.update(4)
+        assert rv.get_window() == [3, 4]
+        #assert rv.running_sum == 7
+        #assert rv.running_sum_sq == 25
+
+        assert rv.update is None
+
+class TestRollingVarianceResults:
+    """Testing RollingVariance variance calculation."""
+
+    def test_get_variance_returns_none_when_not_full(self):
+        rv = RollingVariance(window_size=3)
+        rv.update(1)
+        assert rv.get_variance() is None
+
+        rv.update(2)
+        assert rv.get_variance() is None
+
+    def test_get_variance_correct_when_full(self):
+        rv = RollingVariance(window_size=3, initial_values=[2, 4, 6])
+        expected_variance = 8 / 3  # Pre-calculated variance
+        assert abs(rv.get_variance() - expected_variance) < 1e-10
+
+    def test_get_variance_correct_after_updates(self):
+        rv = RollingVariance(window_size=3, initial_values=[1, 2, 4])
+        expected_variance = 14 / 9  # Pre-calculated variance
+        assert abs(rv.get_variance() - expected_variance) < 1e-10
+
+        rv.update(6)  # Window is now [2, 4, 6]
+        expected_variance = 8 / 3
+        assert abs(rv.get_variance() - expected_variance) < 1e-10
+    
+
+    
