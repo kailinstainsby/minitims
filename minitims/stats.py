@@ -26,6 +26,13 @@ class RollingMean(RollingWindow): # O(1) rolling mean calculation
             return self.running_sum / self.window_size
         return None
     
+# ATTEMPT AT VARIANCE CALCULATED WITH WELFORDS ALGORITHM BEFORE REALISING IT DOESN'T WORK
+"""class RollingVariance(RollingWindow):
+    def __init__(self, window_size:int, initial_values=None) -> None:
+        super().__init__(window_size, initial_values)
+        self.M = 0 # running mean
+        self.M2 = 0 # sum of squared differences from the mean"""
+
 class RollingVariance(RollingWindow): # O(1) rolling variance calculation
     def __init__(self, window_size: int, initial_values=None) -> None:
         # Call parent class to set up buffer
