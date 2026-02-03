@@ -18,4 +18,3 @@ class RollingWindow:
 
     def get_window(self) -> list:
         return list(self.buffer)
-

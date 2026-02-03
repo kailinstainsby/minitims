@@ -37,3 +37,7 @@ again, this is a small, compact library for specifically univartiate primitives,
 - What does “mean” mean in this system?
 - When can the system return a value?
 - What must always be true after update()?
+
+# Functions and Classes
+
+Class RollingWindow will take window_size and initial_values. it will initialize the buffer, which is a deque of max length window_size. 
