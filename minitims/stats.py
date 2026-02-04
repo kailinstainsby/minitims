@@ -97,7 +97,6 @@ class RollingReturns(RollingWindow): # O(1) rolling returns calculation
         if self.is_full():
             return sum(self.buffer) / self.window_size
         return None
-
     
 class RollingStdDev(RollingVariance): # O(1) rolling stddev calculation
     def get_stddev(self) -> float | None:
@@ -129,3 +128,31 @@ class RollingMax(RollingWindow): # O(n) rolling max calculation
         if self.is_full():
             return max(self.buffer)
         return None
+    
+class RollingZScore(RollingWindow):
+    def __init__(self, window_size: int, initial_values=None) -> None:
+        super().__init__(window_size, initial_values)
+
+        self.mean_calculator = RollingMean(window_size, initial_values)
+        self.stddev_calculator = RollingStdDev(window_size, initial_values)
+
+    def update(self, new_value) -> None:
+        super().update(new_value)
+        self.mean_calculator.update(new_value)
+        self.stddev_calculator.update(new_value)
+
+    def get_zscore(self, value=None) -> float | None: #z score relative to value
+        if not self.is_full():
+            return None
+        
+        mean = self.mean_calculator.get_mean()
+        stddev = self.stddev_calculator.get_stddev()
+
+        if stddev == 0:
+            return 0.0
+        
+        # if no value provided, use most recent value in buffer
+        if value is None:
+            value = self.buffer[-1]
+
+        return (value - mean) / stddev
