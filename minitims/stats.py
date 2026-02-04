@@ -3,23 +3,23 @@ from .rolling import RollingWindow
 
 class RollingMean(RollingWindow): # O(1) rolling mean calculation
     def __init__(self, window_size: int, initial_values=None) -> None:
-        # Call parent class to set up buffer
+        # call parent class to set up buffer
         super().__init__(window_size, initial_values)
 
-        # Initialize running_sum
-        # If we have initial values, sum them up, else running_sum is 0
+        # initialize running_sum
+        # if we have initial values, sum them up, else running_sum is 0
         self.running_sum = sum(self.buffer)
 
     def update(self, new_value) -> None:
         # if the buffer is full, we remove the oldest value
         if self.is_full():
-            # Subtract the value that will be removed
+            # subtract the value that will be removed
             self.running_sum -= self.buffer[0]
 
-        # Add the new value to the running sum
+        # add the new value to the running sum
         self.running_sum += new_value
 
-        #Update the superclass buffer
+        # update the superclass buffer
         super().update(new_value)
 
     def get_mean(self) -> float | None:
@@ -29,26 +29,32 @@ class RollingMean(RollingWindow): # O(1) rolling mean calculation
 
 class RollingVariance(RollingWindow): # O(1) rolling variance calculation
     def __init__(self, window_size: int, initial_values=None) -> None:
-        # Call parent class to set up buffer
+        # call parent class to set up buffer
         super().__init__(window_size, initial_values)
 
+        # initialize running sums
         self.running_sum = sum(self.buffer)
         self.running_sum_sq = sum(x**2 for x in self.buffer)
 
     def update(self, new_value) -> None:
         if self.is_full():
+            # remove the oldest value's contributions
             self.running_sum -= self.buffer[0]
+            # also remove its square contribution
             self.running_sum_sq -= self.buffer[0] ** 2
         
+        # add the new value's contributions
         self.running_sum += new_value
         self.running_sum_sq += new_value ** 2
         super().update(new_value)
 
     def get_variance(self) -> float | None:
         if self.is_full():
+            # calculate variance using E[X^2] - (E[X])^2
             mean = self.running_sum / self.window_size
             mean_sq = self.running_sum_sq / self.window_size
             return mean_sq - (mean ** 2)
+        # if window not full, variance undefined
         return None
     
 class RollingReturns(RollingWindow): # O(1) rolling returns calculation
@@ -56,21 +62,21 @@ class RollingReturns(RollingWindow): # O(1) rolling returns calculation
     def __init__(self, window_size: int, initial_values=None) -> None:
         super().__init__(window_size, initial_values=None)
         
-        # Track the previous price for computing returns
+        # track the previous price for computing returns
         self.prev_price = None
         
-        # If we have initial prices, convert them to returns and populate buffer
+        # if we have initial prices, convert them to returns and populate buffer
         if initial_values and len(initial_values) > 1:
-            # First price is just stored as prev_price
+            # first price is just stored as prev_price
             self.prev_price = initial_values[0]
             
-            # Convert remaining prices to returns and store in buffer
+            # convert remaining prices to returns and store in buffer
             for price in initial_values[1:]:
                 ret = math.log(price / self.prev_price)
                 self.buffer.append(ret)
                 self.prev_price = price
         elif initial_values and len(initial_values) == 1:
-            # Only one price - just store it, no returns yet
+            # only one price - just store it, no returns yet
             self.prev_price = initial_values[0]
 
     def update(self, new_price: float) -> None:
@@ -100,14 +106,18 @@ class RollingReturns(RollingWindow): # O(1) rolling returns calculation
     
 class RollingStdDev(RollingVariance): # O(1) rolling stddev calculation
     def get_stddev(self) -> float | None:
+        # this just piggybacks on variance calculation
         variance = self.get_variance()
         if variance is not None:
+            # sq root of variance
             return variance ** 0.5
         return None
 
 class RollingMin(RollingWindow): # O(n) rolling min calculation
     def __init__(self, window_size: int, initial_values=None) -> None:
         super().__init__(window_size, initial_values)
+
+    """ self explanatory, just updates and uses min function """
 
     def update(self, new_value) -> None:
         super().update(new_value)
@@ -121,6 +131,8 @@ class RollingMax(RollingWindow): # O(n) rolling max calculation
     def __init__(self, window_size: int, initial_values=None) -> None:
         super().__init__(window_size, initial_values)
 
+    """ self explanatory, just updates and uses max function """
+
     def update(self, new_value) -> None:
         super().update(new_value)
 
@@ -133,11 +145,13 @@ class RollingZScore(RollingWindow):
     def __init__(self, window_size: int, initial_values=None) -> None:
         super().__init__(window_size, initial_values)
 
+        # get the mean and stddev for z-score calculation
         self.mean_calculator = RollingMean(window_size, initial_values)
         self.stddev_calculator = RollingStdDev(window_size, initial_values)
 
     def update(self, new_value) -> None:
         super().update(new_value)
+        #recalculate mean and stddev with new value
         self.mean_calculator.update(new_value)
         self.stddev_calculator.update(new_value)
 
@@ -145,9 +159,11 @@ class RollingZScore(RollingWindow):
         if not self.is_full():
             return None
         
+        # get mean and stddev from calculators
         mean = self.mean_calculator.get_mean()
         stddev = self.stddev_calculator.get_stddev()
 
+        # avoid edge division by zero
         if stddev == 0:
             return 0.0
         
@@ -155,4 +171,5 @@ class RollingZScore(RollingWindow):
         if value is None:
             value = self.buffer[-1]
 
+        # the final z-score calculation
         return (value - mean) / stddev
