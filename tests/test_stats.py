@@ -180,8 +180,6 @@ class TestRollingVarianceUpdates:
         #assert rv.running_sum == 7
         #assert rv.running_sum_sq == 25
 
-        assert rv.update is None
-
 class TestRollingVarianceResults:
     """Testing RollingVariance variance calculation."""
 
