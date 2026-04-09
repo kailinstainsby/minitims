@@ -6,6 +6,11 @@ A lightweight Python library providing stateful, O(1) rolling statistical primit
 
 ---
 
+## DISCLAIMER !!
+this README was written with help from Claude Sonnet 4.5. Rest assured it was not entirely generated, only assisted, and all has been fact checked and verified. The code itself was written by hand with minimal assistance, and the logic is all designed by me. Enjoy!
+
+---
+
 ## What is this?
 
 `minitims` implements fixed-window statistical aggregators that update incrementally as new data arrives, without recomputing over the entire window. This is the foundation layer for building streaming signal engines, feature pipelines, and real-time analytics systems.
@@ -24,11 +29,6 @@ A lightweight Python library providing stateful, O(1) rolling statistical primit
 - Claim performance parity with production libraries like NumPy
 
 This is a focused, well-tested library for **univariate rolling primitives**.
-
----
-
-## DISCLAIMER !!
-this README was written with help from Claude Sonnet 4.5. Rest assured it was not entirely generated, only assisted, and all has been fact checked and verified. The code itself was written by hand with minimal assistance, and the logic is all designed by me. Enjoy!
 
 ---
 
